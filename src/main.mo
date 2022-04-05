@@ -1,89 +1,86 @@
 import Principal "mo:base/Principal";
-
 import Result "mo:base/Result";
-
 import Trie "mo:base/Trie";
-
 import Types "./types";
-import Utils "./utils";
 
 actor {
+    type Metadata = Types.Metadata;
+    type Error = Types.Error;
 
-  type Metadata = Types.Metadata;
-  type Error = Types.Error;
+    stable var artists : Trie.Trie<Principal, Metadata> = Trie.empty();
+    stable var registryName : Text = "Artists registry";
 
-  stable var artists : Trie.Trie<Principal, Metadata> = Trie.empty();
-  stable var registryName : Text = "Artists registry";
+    public query func name() : async Text {
+        return registryName;
+    };
 
-  public query func name() : async Text {
-    return registryName;
-  };
-
-  public query func get(canisterId : Principal) : async ?Metadata {
+    public query func get(canisterId : Principal) : async ?Metadata {
 
         Trie.find(
-            artists,           //Target Trie
-            Utils.key(canisterId),      // Key
-            Principal.equal     // Equality Checker
+            artists,
+            key(canisterId),
+            Principal.equal
         );
         
-  };
+    };
 
-  public shared({caller}) func add(principal: Principal, metadata : Metadata) : async Result.Result<(), Error> {
+    public shared({caller}) func add(metadata : Metadata) : async Result.Result<(), Error> {
 
-        // Reject AnonymousIdentity
-        if(Principal.isAnonymous(caller)) {
+        if(Principal.isAnonymous(caller) or Principal.notEqual(caller, metadata.principal_id)) {
             return #err(#NotAuthorized);
         };
 
         let artist: Metadata = metadata;
 
         let (newArtists, existing) = Trie.put(
-            artists,           // Target trie
-            Utils.key(caller),      // Key
-            Principal.equal,    // Equality checker
+            artists,
+            key(artist.principal_id),
+            Principal.equal,
             artist
         );
 
         switch(existing) {
-            // If there are no matches, add artist
+            // If there are no matches, add artist to registry
             case null {
                 artists := newArtists;
                 #ok(());
             };
             case (? v) {
-                #err(#AlreadyExists);
+                #err(#Unknown("Already exist"));
             };
         };
-  };
+    };
 
-  public shared({caller}) func remove(principal: Principal) : async Result.Result<(), Error> {
+    public shared({caller}) func remove(principal: Principal) : async Result.Result<(), Error> {
 
-      if(principal != caller or Principal.isAnonymous(caller)) {
-        return #err(#NotAuthorized);
-      };
+        if(Principal.notEqual(caller, principal) or Principal.isAnonymous(caller)) {
+            return #err(#NotAuthorized);
+        };
 
         let result = Trie.find(
-            artists,           // Target trie
-            Utils.key(principal),      // Key
-            Principal.equal,    // Equality checker
+            artists,
+            key(principal),
+            Principal.equal,
         );
 
         switch(result) {
             // No matches
             case null {
-                #err(#NotFound);
+                #err(#NonExistentItem);
             };
             case (? v) {
                 artists := Trie.replace(
                     artists,           // Target trie
-                    Utils.key(principal),     // Key
+                    key(principal),     // Key
                     Principal.equal,   // Equality checker
                     null
                 ).0;
                 #ok(());
             };
         };
-  };
+    };
 
+    private func key(x : Principal) : Trie.Key<Principal> {
+        return { key = x; hash = Principal.hash(x) }
+    };
 };
