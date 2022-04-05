@@ -1,6 +1,6 @@
 ## DAB Registry Standard (DRS) example
 
-This is a pretty simple Registry example that comply with [DAB Registry Standard](https://docs.dab.ooo/standard/getting-started/)
+This is a pretty simple Registry example that complies with [DAB Registry Standard](https://docs.dab.ooo/standard/getting-started/)
 
 More about DAB:
  - [Github](https://github.com/Psychedelic/dab)
