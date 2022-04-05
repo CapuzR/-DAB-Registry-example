@@ -27,3 +27,5 @@ dfx deploy
 ## Basic use | Uso básico
 
 You can use example commands in dfx-examples.md to interact with the registry replacing < principal >.
+
+Puedes utilizar los comandos en dfx-examples.md para interactuar con el registro reemplazando < principal >.
